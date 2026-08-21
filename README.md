@@ -40,6 +40,32 @@ All three bars show `n/a` gracefully until the first API response of a session p
 
 clawd is Claude Code's actual internal mascot — this was reverse-engineered from the installed CLI binary (its real pose data, and its real color, `rgb(215,119,87)`), not invented. It's an unofficial fan-recreation for a personal status line, not an official Anthropic asset, and isn't affiliated with or endorsed by Anthropic.
 
+## How it works
+
+A few things here might be interesting if you're into this kind of thing.
+
+### It's a stateless script, refreshed by events, not a clock
+
+Claude Code re-runs `statusline-command.sh` as a **brand-new process** every time something happens — a new assistant message, `/compact`, a permission-mode change, a vim-mode toggle — not on a fixed timer. There's no daemon, no background loop, and it never calls the model (this is [documented](https://code.claude.com/docs/en/statusline) as not consuming API tokens). Claude Code passes one JSON blob on stdin, and whatever the script prints to stdout becomes the status line. That's the entire contract.
+
+The three bars are read straight out of that JSON: `rate_limits.five_hour.used_percentage`, `rate_limits.seven_day.used_percentage`, and `context_window.used_percentage`. `node -e` (rather than `jq`, which isn't guaranteed to be installed) does the parsing.
+
+### clawd is reverse-engineered, not invented
+
+The pose art, the animation names (`jump`, `look`, `celebrate`, `skip`, `spin`), and the exact color (`rgb(215,119,87)`, with `ansi:redBright` as its own documented non-truecolor fallback) all came from `strings`-ing the installed Claude Code binary and grepping for the render logic. The real component draws each pose from a small set of Unicode "block element" characters (`▛ ▟ ▜ ▝ ▘ ▗ ▄ █`) — each character is a quadrant/half-cell glyph, so a handful of them stacked in a 9-column × 3-row grid is enough to fake a tiny bitmap sprite without any image support. Same trick this script uses.
+
+### Why 256-color and not truecolor
+
+The first version used 24-bit truecolor (`\033[38;2;215;119;87m`) for clawd and broke — one terminal reliably corrupted the render. The [statusline docs](https://code.claude.com/docs/en/statusline) only show basic ANSI colors in their examples and warn that "multi-line status lines with escape codes are more prone to rendering issues." Dropping to the 256-color palette (`\033[38;5;173m` — picked by mapping the real RGB onto the nearest xterm 6×6×6 color-cube index) got close to the real color using an escape-code format that's been standard since the 90s, rather than a newer one some terminals still handle inconsistently.
+
+### The line-3 clipping bug hunt
+
+While adding the `ctx` bar, one terminal kept clipping the 3rd line whenever it contained clawd's own characters — but never when line 3 was plain text, and never when it reused the same `█`/`░` bar characters as lines 1-2. Isolating that took toggling one variable at a time: line count, truecolor vs. basic ANSI, then Unicode content with color stripped out entirely. It came down to those specific quadrant characters on the *last* line of the output, independent of color — which is why `ctx` is a plain bar and clawd's legs only sit on lines that aren't last. If you hit similar clipping while customizing, that's the first thing to check.
+
+### Faking a timer in a process with no memory
+
+Since every refresh is a fresh process, "show the bubble for ~5 seconds" can't just be a `sleep` — there's nothing to sleep *in*. Instead, when a bubble triggers, the script writes an expiry timestamp (`$EPOCHSECONDS + 5`) plus the chosen pose/message to a small state file (`~/.claude/.clawd-bubble-state`). Every later invocation reads that file first: if `$EPOCHSECONDS` hasn't passed the stored expiry yet, it just keeps showing the same bubble instead of re-rolling. It's a one-line poor-man's TTL cache, and it's the only thing that persists between runs.
+
 ## Customizing
 
 Everything lives in one file, `statusline-command.sh`:
@@ -48,10 +74,6 @@ Everything lives in one file, `statusline-command.sh`:
 - `MESSAGES=(...)` — the pool of speech-bubble lines; add, remove, or edit freely (emoji work fine)
 - `RANDOM % 6` — the bubble's trigger chance (currently ~1-in-6 per refresh); lower the `6` for more frequent bubbles
 - `color_for_pct()` — the green/yellow/red thresholds for the bars
-
-## Notes on line count
-
-The status line only ever prints 3 lines. In testing, a terminal reliably clipped a 3rd line whenever it contained clawd's specific block-drawing characters on their own — but a 3rd line built from plain progress-bar characters (`█`/`░`, same as lines 1-2) rendered fine, which is why `ctx` looks the way it does. If you run into similar clipping when customizing, that's the thing to check first.
 
 ## Uninstall
 
