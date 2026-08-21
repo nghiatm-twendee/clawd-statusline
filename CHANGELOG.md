@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-21
+
+### Fixed
+
+- Dim yellow (`\033[2;33m`) had the same low-contrast issue as the earlier
+  dim red/green — switched to bright yellow (`\033[93m`).
+
 ## [0.1.2] - 2026-08-21
 
 ### Fixed
@@ -37,7 +44,8 @@ Initial public release.
 - WTFPL license with the FAQ's suggested no-warranty disclaimer.
 - README with screenshot and a "how it works" section.
 
-[unreleased]: https://github.com/nghiatm-twendee/clawd-statusline/compare/v0.1.2...HEAD
+[unreleased]: https://github.com/nghiatm-twendee/clawd-statusline/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/nghiatm-twendee/clawd-statusline/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/nghiatm-twendee/clawd-statusline/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/nghiatm-twendee/clawd-statusline/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nghiatm-twendee/clawd-statusline/releases/tag/v0.1.0
