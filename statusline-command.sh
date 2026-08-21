@@ -144,7 +144,11 @@ fi
 expiry=${expiry:-0}
 pose_idx=${pose_idx:-0}
 
-if [ "$expiry" -gt "$EPOCHSECONDS" ] 2>/dev/null; then
+# $EPOCHSECONDS is a bash 5.0+ builtin, absent on macOS's default bash 3.2 —
+# fall back to `date` so the bubble timer still works on an older bash.
+now=${EPOCHSECONDS:-$(date +%s)}
+
+if [ "$expiry" -gt "$now" ] 2>/dev/null; then
   : # still within its hold window — keep the same pose/message
 else
   expiry=0
@@ -154,7 +158,7 @@ else
   if [ $((RANDOM % 6)) -eq 0 ]; then
     pose_idx=$((RANDOM % 4))
     msg="${MESSAGES[$((RANDOM % ${#MESSAGES[@]}))]}"
-    expiry=$((EPOCHSECONDS + BUBBLE_HOLD_SECONDS))
+    expiry=$((now + BUBBLE_HOLD_SECONDS))
   fi
 fi
 echo "${expiry}|${pose_idx}|${msg}" > "$BUBBLE_STATE"

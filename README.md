@@ -28,6 +28,13 @@ Prefer not to pipe a script straight into bash? Fair — [read `install.sh`](./i
 - `bash`
 - `node` on your `PATH` (used to parse the JSON Claude Code passes in — no packages, just `node -e`)
 
+## Platform support
+
+- **Linux** — fully tested, this is where it was built and debugged.
+- **macOS** — should work as-is. The one bash-version trap (`$EPOCHSECONDS`, a bash 5.0+ builtin — macOS ships bash 3.2 by default) has a `date +%s` fallback built in, so the speech-bubble timer works even on the stock system bash.
+- **Windows (native, not WSL)** — Claude Code runs `statusLine` commands through **Git Bash if it's on your `PATH`, otherwise PowerShell**. Since this script is invoked as `bash ~/.claude/statusline-command.sh`, you'll need Git Bash installed for it to run at all. Not tested by me — if you try it, an issue report either way is welcome.
+- **WSL** — just Linux, should be no different.
+
 ## What's on it
 
 - **`5h`** and **`7d`** — your Claude.ai rate-limit usage, from `rate_limits.five_hour` / `rate_limits.seven_day` in the status line payload. Green under 50%, yellow under 80%, bright red at 80%+.
@@ -64,7 +71,7 @@ While adding the `ctx` bar, one terminal kept clipping the 3rd line whenever it 
 
 ### Faking a timer in a process with no memory
 
-Since every refresh is a fresh process, "show the bubble for ~5 seconds" can't just be a `sleep` — there's nothing to sleep *in*. Instead, when a bubble triggers, the script writes an expiry timestamp (`$EPOCHSECONDS + 5`) plus the chosen pose/message to a small state file (`~/.claude/.clawd-bubble-state`). Every later invocation reads that file first: if `$EPOCHSECONDS` hasn't passed the stored expiry yet, it just keeps showing the same bubble instead of re-rolling. It's a one-line poor-man's TTL cache, and it's the only thing that persists between runs.
+Since every refresh is a fresh process, "show the bubble for ~5 seconds" can't just be a `sleep` — there's nothing to sleep *in*. Instead, when a bubble triggers, the script writes an expiry timestamp (current time + 5) plus the chosen pose/message to a small state file (`~/.claude/.clawd-bubble-state`). Every later invocation reads that file first: if the current time hasn't passed the stored expiry yet, it just keeps showing the same bubble instead of re-rolling. It's a one-line poor-man's TTL cache, and it's the only thing that persists between runs. "Current time" is `$EPOCHSECONDS` (a fast bash 5.0+ builtin) with a `date +%s` fallback for bash 3.2, which is what macOS ships by default.
 
 ## Customizing
 
