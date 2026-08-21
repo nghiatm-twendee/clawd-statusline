@@ -1,4 +1,6 @@
 #!/bin/bash
+# clawd-statusline v0.1.1 — https://github.com/nghiatm-twendee/clawd-statusline
+#
 # Claude Code status line: 5-hour / 7-day (weekly) Claude.ai rate limit usage and
 # live context-window usage, each a progress bar, plus "clawd" (Claude Code's real
 # mascot, reverse-engineered from the installed binary) sitting to the right of the
