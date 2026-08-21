@@ -1,8 +1,12 @@
 # clawd-statusline
 
-A [Claude Code](https://claude.com/claude-code) status line with three live progress bars — 5-hour usage, 7-day usage, and context window usage — plus **clawd**, Claude Code's own real mascot, hanging out on the right. clawd is quiet most of the time, but every now and then he strikes a random pose and pops up a short speech bubble.
+A Claude Code status line I put together in an afternoon because I wanted my usage bars visible at a glance, and then thought "what if there was also a little guy." The little guy is clawd — Claude Code's actual mascot.
 
 ![screenshot](./screenshot.png)
+
+Three live bars (5-hour usage, 7-day usage, context window usage) and clawd chilling on the right. He's quiet most of the time, but every so often he strikes a pose and says something in a little speech bubble.
+
+This is a fun side project, not a product — no roadmap, no promises, just a script that made my terminal more fun to look at.
 
 ## Install
 
@@ -10,9 +14,9 @@ A [Claude Code](https://claude.com/claude-code) status line with three live prog
 curl -fsSL https://raw.githubusercontent.com/nghiatm-twendee/clawd-statusline/main/install.sh | bash
 ```
 
-This downloads `statusline-command.sh` into `~/.claude/` and adds a `statusLine` entry to `~/.claude/settings.json`. It only touches that one key — anything else already in your `settings.json` is left alone. Restart Claude Code (or start a new session) afterward to see it.
+Grabs `statusline-command.sh`, drops it in `~/.claude/`, and adds a `statusLine` line to your `settings.json` without touching anything else already in there. Restart Claude Code (or start a fresh session) and it should show up.
 
-Prefer not to pipe a script straight into bash? Fair — [read `install.sh`](./install.sh) first, or just do it by hand:
+Not into piping a random script into bash, understandably — [take a look at `install.sh`](./install.sh) first, or just do it yourself:
 
 1. Copy [`statusline-command.sh`](./statusline-command.sh) to `~/.claude/statusline-command.sh`
 2. Add this to `~/.claude/settings.json`:
@@ -25,62 +29,49 @@ Prefer not to pipe a script straight into bash? Fair — [read `install.sh`](./i
 
 ## Requirements
 
-- `bash`
-- `node` on your `PATH` (used to parse the JSON Claude Code passes in — no packages, just `node -e`)
+Just `bash` and `node` on your `PATH`. Node's only used for `node -e` to parse the JSON Claude Code hands it — no packages, nothing to install beyond having node around.
 
 ## Platform support
 
-- **Linux** — fully tested, this is where it was built and debugged.
-- **macOS** — should work as-is. The one bash-version trap (`$EPOCHSECONDS`, a bash 5.0+ builtin — macOS ships bash 3.2 by default) has a `date +%s` fallback built in, so the speech-bubble timer works even on the stock system bash.
-- **Windows (native, not WSL)** — Claude Code runs `statusLine` commands through **Git Bash if it's on your `PATH`, otherwise PowerShell**. Since this script is invoked as `bash ~/.claude/statusline-command.sh`, you'll need Git Bash installed for it to run at all. Not tested by me — if you try it, an issue report either way is welcome.
-- **WSL** — just Linux, should be no different.
+- **Linux** — yep, built and lived here the whole time.
+- **macOS** — should just work. Hit one bash-version snag along the way (`$EPOCHSECONDS` needs bash 5+, macOS ships bash 3.2) and patched it with a `date` fallback.
+- **Windows (native)** — needs Git Bash on your `PATH`, since Claude Code falls back to PowerShell without it and the script is bash. Haven't actually tried this one myself — if you do, let me know how it goes either way.
+- **WSL** — same as Linux, no reason it wouldn't work.
 
 ## What's on it
 
-- **`5h`** and **`7d`** — your Claude.ai rate-limit usage, from `rate_limits.five_hour` / `rate_limits.seven_day` in the status line payload. Green under 50%, yellow under 80%, bright red at 80%+.
-- **`ctx`** — live context window usage for the current session, from `context_window.used_percentage`.
-- **clawd** — sits next to the first two bars. About 1-in-6 refreshes, he'll strike one of 4 random poses and show a short message in a speech bubble for a few seconds before going quiet again.
+- **`5h`** / **`7d`** — your Claude.ai rate-limit usage. Green under 50%, yellow under 80%, red past that.
+- **`ctx`** — how full your context window is, live.
+- **clawd** — sits next to the top two bars. About 1-in-6 refreshes he'll strike a random pose and pop up a short message for a few seconds before going back to quiet.
 
-All three bars show `n/a` gracefully until the first API response of a session populates that data (this is normal — see the [statusline docs](https://code.claude.com/docs/en/statusline)).
+Bars show `n/a` until your first message of a session — that's normal, Claude Code just hasn't sent that data yet.
 
 ## Where clawd comes from
 
-clawd is Claude Code's actual internal mascot — this was reverse-engineered from the installed CLI binary (its real pose data, and its real color, `rgb(215,119,87)`), not invented. It's an unofficial fan-recreation for a personal status line, not an official Anthropic asset, and isn't affiliated with or endorsed by Anthropic.
+Not something I drew — clawd is Claude Code's real internal mascot. I pulled the actual pose data and actual color (`rgb(215,119,87)`) out of the installed CLI binary. Unofficial fan-recreation, not an Anthropic asset, not endorsed by anyone but me.
 
-## How it works
+## How it works (the fun nerdy bits)
 
-A few things here might be interesting if you're into this kind of thing.
+If you're curious how any of this actually works, here's the stuff I found interesting while building it.
 
-### It's a stateless script, refreshed by events, not a clock
+**No timer, just events.** Claude Code reruns the script as a brand-new process whenever something happens — a new message, `/compact`, that sort of thing — not on a clock. No daemon, no loop, never touches the model (doesn't burn any tokens). It just gets one JSON blob on stdin and whatever gets printed becomes the status line.
 
-Claude Code re-runs `statusline-command.sh` as a **brand-new process** every time something happens — a new assistant message, `/compact`, a permission-mode change, a vim-mode toggle — not on a fixed timer. There's no daemon, no background loop, and it never calls the model (this is [documented](https://code.claude.com/docs/en/statusline) as not consuming API tokens). Claude Code passes one JSON blob on stdin, and whatever the script prints to stdout becomes the status line. That's the entire contract.
+**clawd's not invented, he's excavated.** The pose art, the animation names (`jump`, `look`, `celebrate`, `skip`, `spin`), all of it came from `strings`-ing the Claude Code binary and grepping around. The real thing draws him with a handful of Unicode block/quadrant characters (`▛ ▟ ▜ ▝ ▘ ▗ ▄ █`) — enough of those stacked in a small grid and you get a tiny sprite with zero image support needed. Same trick here.
 
-The three bars are read straight out of that JSON: `rate_limits.five_hour.used_percentage`, `rate_limits.seven_day.used_percentage`, and `context_window.used_percentage`. `node -e` (rather than `jq`, which isn't guaranteed to be installed) does the parsing.
+**Why 256-color, not truecolor.** First attempt used real 24-bit color for clawd and it broke — corrupted the render in one terminal. The docs only show basic ANSI colors in their examples for a reason, apparently. Dropped to the 256-color palette instead (closest match to the real RGB), which is old enough that basically nothing chokes on it.
 
-### clawd is reverse-engineered, not invented
+**A genuinely annoying bug.** Adding the `ctx` bar as a 3rd line, one terminal kept clipping it — but only when it had clawd's characters on it, never plain text, never the same bar characters used on lines 1-2. Took isolating line count, color, and Unicode content one at a time to figure out it was specifically clawd's quadrant characters on the *last* line, nothing else. That's why `ctx` is a plain bar instead of clawd showing his legs there.
 
-The pose art, the animation names (`jump`, `look`, `celebrate`, `skip`, `spin`), and the exact color (`rgb(215,119,87)`, with `ansi:redBright` as its own documented non-truecolor fallback) all came from `strings`-ing the installed Claude Code binary and grepping for the render logic. The real component draws each pose from a small set of Unicode "block element" characters (`▛ ▟ ▜ ▝ ▘ ▗ ▄ █`) — each character is a quadrant/half-cell glyph, so a handful of them stacked in a 9-column × 3-row grid is enough to fake a tiny bitmap sprite without any image support. Same trick this script uses.
-
-### Why 256-color and not truecolor
-
-The first version used 24-bit truecolor (`\033[38;2;215;119;87m`) for clawd and broke — one terminal reliably corrupted the render. The [statusline docs](https://code.claude.com/docs/en/statusline) only show basic ANSI colors in their examples and warn that "multi-line status lines with escape codes are more prone to rendering issues." Dropping to the 256-color palette (`\033[38;5;173m` — picked by mapping the real RGB onto the nearest xterm 6×6×6 color-cube index) got close to the real color using an escape-code format that's been standard since the 90s, rather than a newer one some terminals still handle inconsistently.
-
-### The line-3 clipping bug hunt
-
-While adding the `ctx` bar, one terminal kept clipping the 3rd line whenever it contained clawd's own characters — but never when line 3 was plain text, and never when it reused the same `█`/`░` bar characters as lines 1-2. Isolating that took toggling one variable at a time: line count, truecolor vs. basic ANSI, then Unicode content with color stripped out entirely. It came down to those specific quadrant characters on the *last* line of the output, independent of color — which is why `ctx` is a plain bar and clawd's legs only sit on lines that aren't last. If you hit similar clipping while customizing, that's the first thing to check.
-
-### Faking a timer in a process with no memory
-
-Since every refresh is a fresh process, "show the bubble for ~5 seconds" can't just be a `sleep` — there's nothing to sleep *in*. Instead, when a bubble triggers, the script writes an expiry timestamp (current time + 5) plus the chosen pose/message to a small state file (`~/.claude/.clawd-bubble-state`). Every later invocation reads that file first: if the current time hasn't passed the stored expiry yet, it just keeps showing the same bubble instead of re-rolling. It's a one-line poor-man's TTL cache, and it's the only thing that persists between runs. "Current time" is `$EPOCHSECONDS` (a fast bash 5.0+ builtin) with a `date +%s` fallback for bash 3.2, which is what macOS ships by default.
+**Faking memory in something that has none.** Every refresh is a brand new process with zero memory of the last one, so "show the bubble for 5 seconds" can't be a `sleep`. Instead it writes an expiry time + the chosen message to a tiny file, and every future run just checks "has that expired yet?" before deciding whether to reroll. A one-line TTL cache, basically.
 
 ## Customizing
 
-Everything lives in one file, `statusline-command.sh`:
+It's all in `statusline-command.sh`, nothing fancy:
 
-- `BUBBLE_HOLD_SECONDS` — how long a triggered speech bubble stays up (default `5`)
-- `MESSAGES=(...)` — the pool of speech-bubble lines; add, remove, or edit freely (emoji work fine)
-- `RANDOM % 6` — the bubble's trigger chance (currently ~1-in-6 per refresh); lower the `6` for more frequent bubbles
-- `color_for_pct()` — the green/yellow/red thresholds for the bars
+- `BUBBLE_HOLD_SECONDS` — how long the bubble sticks around (default `5`)
+- `MESSAGES=(...)` — the pool of things clawd says, add/remove whatever, emoji are fine
+- `RANDOM % 6` — how often the bubble shows up (currently ~1-in-6); lower the number for more often
+- `color_for_pct()` — the green/yellow/red cutoffs
 
 ## Uninstall
 
@@ -88,4 +79,4 @@ Everything lives in one file, `statusline-command.sh`:
 curl -fsSL https://raw.githubusercontent.com/nghiatm-twendee/clawd-statusline/main/uninstall.sh | bash
 ```
 
-Removes just the `"statusLine"` key from `~/.claude/settings.json` (everything else is left alone), and deletes `~/.claude/statusline-command.sh` and its small state file. Or by hand: remove the `"statusLine"` key from `~/.claude/settings.json` and delete `~/.claude/statusline-command.sh`.
+Pulls the `statusLine` line back out of `settings.json` (leaves everything else alone) and deletes the script + its little state file. Or just do that by hand if you'd rather.
