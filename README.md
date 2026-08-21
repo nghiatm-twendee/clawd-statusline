@@ -77,4 +77,8 @@ Everything lives in one file, `statusline-command.sh`:
 
 ## Uninstall
 
-Remove the `"statusLine"` key from `~/.claude/settings.json` and delete `~/.claude/statusline-command.sh`.
+```
+curl -fsSL https://raw.githubusercontent.com/nghiatm-twendee/clawd-statusline/main/uninstall.sh | bash
+```
+
+Removes just the `"statusLine"` key from `~/.claude/settings.json` (everything else is left alone), and deletes `~/.claude/statusline-command.sh` and its small state file. Or by hand: remove the `"statusLine"` key from `~/.claude/settings.json` and delete `~/.claude/statusline-command.sh`.
