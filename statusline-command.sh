@@ -64,31 +64,35 @@ make_bar() {
   echo "$(repeat_char "█" "$filled")$(repeat_char "░" "$empty")"
 }
 
+# Percentage text is padded to a fixed 4 chars ("  5%", " 50%", "100%") so
+# line length before clawd stays constant regardless of digit count — otherwise
+# clawd's column shifts left/right depending on whether the percentage is
+# 1, 2, or 3 digits.
 if [ -n "$five_pct" ]; then
   bar=$(make_bar "$five_pct")
-  pct_str=$(printf "%.0f%%" "$five_pct")
+  pct_str=$(printf "%3.0f%%" "$five_pct")
   color=$(color_for_pct "$five_pct")
   line1="${color}5h  [${bar}] ${pct_str}${RESET}"
 else
-  line1="${DIM}5h  [--------------------] n/a${RESET}"
+  line1="${DIM}5h  [--------------------]  n/a${RESET}"
 fi
 
 if [ -n "$week_pct" ]; then
   bar=$(make_bar "$week_pct")
-  pct_str=$(printf "%.0f%%" "$week_pct")
+  pct_str=$(printf "%3.0f%%" "$week_pct")
   color=$(color_for_pct "$week_pct")
   line2="${color}7d  [${bar}] ${pct_str}${RESET}"
 else
-  line2="${DIM}7d  [--------------------] n/a${RESET}"
+  line2="${DIM}7d  [--------------------]  n/a${RESET}"
 fi
 
 if [ -n "$ctx_pct" ]; then
   bar=$(make_bar "$ctx_pct")
-  pct_str=$(printf "%.0f%%" "$ctx_pct")
+  pct_str=$(printf "%3.0f%%" "$ctx_pct")
   color=$(color_for_pct "$ctx_pct")
   line3="${color}ctx [${bar}] ${pct_str}${RESET}"
 else
-  line3="${DIM}ctx [--------------------] n/a${RESET}"
+  line3="${DIM}ctx [--------------------]  n/a${RESET}"
 fi
 
 # clawd's 4 poses, 3 rows each (head, body, legs)
