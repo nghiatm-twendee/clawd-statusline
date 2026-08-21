@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-21
+
+### Fixed
+
+- Dim green (`\033[2;32m`) was low-contrast on dark terminal backgrounds —
+  same issue dim red had before. Switched to bright green (`\033[92m`).
+
 ## [0.1.1] - 2026-08-21
 
 ### Fixed
@@ -30,6 +37,7 @@ Initial public release.
 - WTFPL license with the FAQ's suggested no-warranty disclaimer.
 - README with screenshot and a "how it works" section.
 
-[unreleased]: https://github.com/nghiatm-twendee/clawd-statusline/compare/v0.1.1...HEAD
+[unreleased]: https://github.com/nghiatm-twendee/clawd-statusline/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/nghiatm-twendee/clawd-statusline/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/nghiatm-twendee/clawd-statusline/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nghiatm-twendee/clawd-statusline/releases/tag/v0.1.0

@@ -1,5 +1,5 @@
 #!/bin/bash
-# clawd-statusline v0.1.1 — https://github.com/nghiatm-twendee/clawd-statusline
+# clawd-statusline v0.1.2 — https://github.com/nghiatm-twendee/clawd-statusline
 #
 # Claude Code status line: 5-hour / 7-day (weekly) Claude.ai rate limit usage and
 # live context-window usage, each a progress bar, plus "clawd" (Claude Code's real
@@ -15,7 +15,7 @@ input=$(cat)
 RESET='\033[0m'
 DIM='\033[2m'
 YELLOW='\033[2;33m'
-GREEN='\033[2;32m'
+GREEN='\033[92m'   # bright, not dim — same low-contrast issue dim red had on dark backgrounds
 RED='\033[91m'   # bright, not dim — dim red on a dark background is hard to read
 CLAWD_COLOR='\033[38;5;173m'   # 256-color approximation of clawd's real rgb(215,119,87)
 
