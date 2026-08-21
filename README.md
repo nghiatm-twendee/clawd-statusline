@@ -80,3 +80,7 @@ curl -fsSL https://raw.githubusercontent.com/nghiatm-twendee/clawd-statusline/ma
 ```
 
 Pulls the `statusLine` line back out of `settings.json` (leaves everything else alone) and deletes the script + its little state file. Or just do that by hand if you'd rather.
+
+## License
+
+[WTFPL](./LICENSE). Do whatever you want with it.
