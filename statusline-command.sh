@@ -1,15 +1,17 @@
 #!/bin/bash
-# clawd-statusline v0.1.4 — https://github.com/nghiatm-twendee/clawd-statusline
+# clawd-statusline v0.1.5 — https://github.com/nghiatm-twendee/clawd-statusline
 #
 # Claude Code status line: 5-hour / 7-day (weekly) Claude.ai rate limit usage and
 # live context-window usage, each a progress bar, plus "clawd" (Claude Code's real
 # mascot, reverse-engineered from the installed binary) sitting to the right of the
 # first two lines. clawd is quiet by default; every now and then it shows a random
-# pose + a short speech bubble instead.
+# pose + a short speech bubble instead. A 4th line shows when each rate-limit
+# window resets (24h clock, weekday-prefixed if not today).
 #
 # Line 3 is plain-bar style only (same █/░ characters as lines 1-2), no clawd
 # content — testing showed the user's terminal reliably clips a 3rd line whenever
 # it contains clawd's specific quadrant-block characters, independent of color.
+# Line 4 is plain text only, same reasoning, and hasn't been terminal-tested yet.
 input=$(cat)
 
 RESET='\033[0m'
@@ -41,6 +43,16 @@ let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
 ctx_pct=$(echo "$input" | node -e '
 let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
   try{const j=JSON.parse(d);const v=j.context_window&&j.context_window.used_percentage;
+  if(typeof v==="number")process.stdout.write(String(v));}catch(e){}
+});')
+five_reset=$(echo "$input" | node -e '
+let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
+  try{const j=JSON.parse(d);const v=j.rate_limits&&j.rate_limits.five_hour&&j.rate_limits.five_hour.resets_at;
+  if(typeof v==="number")process.stdout.write(String(v));}catch(e){}
+});')
+week_reset=$(echo "$input" | node -e '
+let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
+  try{const j=JSON.parse(d);const v=j.rate_limits&&j.rate_limits.seven_day&&j.rate_limits.seven_day.resets_at;
   if(typeof v==="number")process.stdout.write(String(v));}catch(e){}
 });')
 
@@ -96,6 +108,29 @@ if [ -n "$ctx_pct" ]; then
 else
   line3="${DIM}ctx [--------------------]  n/a${RESET}"
 fi
+
+# Format a reset epoch-seconds timestamp as 24h "HH:MM", prefixed with the
+# weekday when the reset falls on a different calendar day than today (the
+# 7d window almost always needs this; the 5h window practically never does).
+# `date -d @epoch` is GNU; `date -r epoch` is the BSD/macOS equivalent.
+format_reset_time() {
+  local epoch="$1" hhmm today_ymd reset_ymd wd
+  [ -z "$epoch" ] && return
+  hhmm=$(date -d "@$epoch" +"%H:%M" 2>/dev/null || date -r "$epoch" +"%H:%M" 2>/dev/null)
+  [ -z "$hhmm" ] && return
+  today_ymd=$(date +"%Y%m%d")
+  reset_ymd=$(date -d "@$epoch" +"%Y%m%d" 2>/dev/null || date -r "$epoch" +"%Y%m%d" 2>/dev/null)
+  if [ "$reset_ymd" != "$today_ymd" ]; then
+    wd=$(date -d "@$epoch" +"%a" 2>/dev/null || date -r "$epoch" +"%a" 2>/dev/null)
+    echo "${wd} ${hhmm}"
+  else
+    echo "$hhmm"
+  fi
+}
+
+five_reset_str=$(format_reset_time "$five_reset")
+week_reset_str=$(format_reset_time "$week_reset")
+line4="${DIM}resets  5h @ ${five_reset_str:-n/a}   7d @ ${week_reset_str:-n/a}${RESET}"
 
 # clawd's 4 poses, 3 rows each (head, body, legs)
 pose_r1=(" ▐▛███▛█" " ▐▟███▟█" " ▐█▟███▟" "▗▟▛███▛█▄")
@@ -179,7 +214,8 @@ if [ -n "$msg" ]; then
   clawd_out2="${clawd_out2} ${DIM}◀ ( ${msg} )${RESET}"
 fi
 
-printf "%b\n%b\n%b\n" \
+printf "%b\n%b\n%b\n%b\n" \
   "${line1}   ${clawd_out1}" \
   "${line2}   ${clawd_out2}" \
-  "${line3}   ${clawd_out3}"
+  "${line3}   ${clawd_out3}" \
+  "${line4}"
