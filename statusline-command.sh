@@ -1,5 +1,5 @@
 #!/bin/bash
-# clawd-statusline v0.1.3 — https://github.com/nghiatm-twendee/clawd-statusline
+# clawd-statusline v0.1.4 — https://github.com/nghiatm-twendee/clawd-statusline
 #
 # Claude Code status line: 5-hour / 7-day (weekly) Claude.ai rate limit usage and
 # live context-window usage, each a progress bar, plus "clawd" (Claude Code's real
@@ -133,6 +133,8 @@ MESSAGES=(
   "✨✨"
   "🦀👋"
   "🌟"
+  "🫲6️⃣7️⃣🫱"
+  "gyatt 😳"
 )
 
 # Persist bubble state across refreshes (each invocation is a fresh process) so a
